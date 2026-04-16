@@ -4,7 +4,7 @@ import logging
 
 from homeassistant.const import ATTR_ATTRIBUTION, ATTR_DEVICE_CLASS, CONF_NAME
 from homeassistant.helpers.device_registry import DeviceEntryType
-from homeassistant.helpers.entity import Entity
+from homeassistant.components.sensor import SensorEntity
 
 from .const import (
     ATTR_ICON,
@@ -33,7 +33,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(sensors, False)
 
 
-class ColorfulcloudsSensor(Entity):
+class ColorfulcloudsSensor(SensorEntity):
     """Define an Colorfulclouds entity."""
 
     def __init__(self, name, kind, coordinator, forecast_day=None):
@@ -45,7 +45,7 @@ class ColorfulcloudsSensor(Entity):
         self._attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}
         self._unit_system = (
             "Metric"
-            if self.coordinator.data["is_metric"] == "metric:v2"
+            if self.coordinator.data["is_metric"] == "metric"
             else "Imperial"
         )
         self.forecast_day = forecast_day
@@ -84,7 +84,7 @@ class ColorfulcloudsSensor(Entity):
         return self.coordinator.last_update_success
 
     @property
-    def state(self):
+    def native_value(self):
         """Return the state."""
         if self.kind == "apparent_temperature":
             return self.coordinator.data["result"]["realtime"][self.kind]
@@ -132,7 +132,7 @@ class ColorfulcloudsSensor(Entity):
         return SENSOR_TYPES[self.kind][ATTR_DEVICE_CLASS]
 
     @property
-    def unit_of_measurement(self):
+    def native_unit_of_measurement(self):
         """Return the unit the value is expressed in."""
         # if self.forecast_day is not None:
         #     return FORECAST_SENSOR_TYPES[self.kind][self._unit_system]
