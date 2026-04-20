@@ -65,6 +65,8 @@
   + 彩云 API 升级为 v2.6（`/weather` 聚合接口）
   + 适配 Home Assistant 新版传感器接口
   + 配置流默认 API 版本更新为 `v2.6`，并支持 `dailysteps` 最小值为 1
++ ### v2.1.1
+  + 修复新版本 Home Assistant 中 `weather.xxx` 实体无法创建的问题（天气预报字段改为标准键名）
 ## 安装配置
 
 建议使用HACS安装和配置

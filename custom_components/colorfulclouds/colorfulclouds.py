@@ -68,9 +68,14 @@ class ColorfulcloudsDataUpdateCoordinator(DataUpdateCoordinator):
                     str(self.alert).lower(),
                     self.is_metric,
                 )
-                response = await self.websession.get(url)
-                response.raise_for_status()
-                resdata = json_loads(await response.text())
+                async with self.websession.get(url) as response:
+                    response.raise_for_status()
+                    resdata = json_loads(await response.text())
+
+                if resdata.get("status") != "ok":
+                    raise UpdateFailed(
+                        f"Caiyun API returned non-ok status: {resdata.get('status')}"
+                    )
         except (ClientError, TimeoutError, ValueError) as error:
             raise UpdateFailed(error)
         _LOGGER.debug("Requests remaining: %s", url)
