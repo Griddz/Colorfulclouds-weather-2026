@@ -65,7 +65,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
             # If it is not, continue with communication test
             url = str.format(
-                "https://api.caiyunapp.com/{}/{}/{},{}/daily.json",
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather?dailysteps=1&hourlysteps=1&alert=true&unit=metric",
                 user_input["api_version"],
                 user_input["api_key"],
                 user_input["longitude"],
@@ -92,7 +92,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_config_form(self, user_input):
         # Defaults
-        api_version = "v2.5"
+        api_version = "v2.6"
         data_schema = OrderedDict()
         data_schema[vol.Required(CONF_API_KEY)] = str
         data_schema[vol.Optional("api_version", default=api_version)] = str
@@ -149,7 +149,7 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_DAILYSTEPS,
                         default=self.config_entry.options.get(CONF_DAILYSTEPS, 5),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=5, max=15)),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=15)),
                     vol.Optional(
                         CONF_INTERVAL,
                         default=self.config_entry.options.get(CONF_INTERVAL, 5),
@@ -157,7 +157,7 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_HOURLYSTEPS,
                         default=self.config_entry.options.get(CONF_HOURLYSTEPS, 24),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=24, max=360)),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=360)),
                     vol.Optional(
                         CONF_STARTTIME,
                         default=self.config_entry.options.get(CONF_STARTTIME, 0),
