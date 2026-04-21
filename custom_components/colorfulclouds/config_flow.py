@@ -95,23 +95,75 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self._show_config_form(user_input)
 
-    async def _show_config_form(self, user_input):
+    async def async_step_reconfigure(self, user_input=None):
+        """Handle reconfigure flow from the integration entry."""
+        self._errors = {}
+        entry = self._get_reconfigure_entry()
+
+        if user_input is not None:
+            url = str.format(
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather?dailysteps=1&hourlysteps=1&alert=true&unit=metric",
+                user_input["api_version"],
+                user_input["api_key"],
+                user_input["longitude"],
+                user_input["latitude"],
+            )
+            try:
+                redata = await self.hass.async_add_executor_job(self.get_data, url)
+            except requests.RequestException:
+                self._errors["base"] = "communication"
+                return await self._show_config_form(
+                    user_input, step_id="reconfigure", defaults=entry.data
+                )
+
+            if redata.get("status") == "ok":
+                await self.async_set_unique_id(
+                    f"{user_input['longitude']}-{user_input['latitude']}".replace(
+                        ".", "_"
+                    )
+                )
+                self._abort_if_unique_id_mismatch(reason="already_configured")
+                return self.async_update_reload_and_abort(entry, data_updates=user_input)
+
+            self._errors["base"] = "communication"
+
+        return await self._show_config_form(
+            user_input, step_id="reconfigure", defaults=entry.data
+        )
+
+    async def _show_config_form(self, user_input, step_id="user", defaults=None):
         # Defaults
-        api_version = "v2.6"
+        defaults = defaults or {}
+        api_version = defaults.get("api_version", "v2.6")
         data_schema = OrderedDict()
-        data_schema[vol.Required(CONF_API_KEY)] = str
+        data_schema[
+            vol.Required(
+                CONF_API_KEY, default=defaults.get(CONF_API_KEY, user_input.get(CONF_API_KEY) if user_input else "")
+            )
+        ] = str
         data_schema[vol.Optional("api_version", default=api_version)] = str
         data_schema[
-            vol.Optional(CONF_LONGITUDE, default=self.hass.config.longitude)
+            vol.Optional(
+                CONF_LONGITUDE,
+                default=defaults.get(
+                    CONF_LONGITUDE, self.hass.config.longitude
+                ),
+            )
         ] = cv.longitude
-        data_schema[vol.Optional(CONF_LATITUDE, default=self.hass.config.latitude)] = (
-            cv.latitude
-        )
-        data_schema[vol.Optional(CONF_NAME, default=self.hass.config.location_name)] = (
-            str
-        )
+        data_schema[
+            vol.Optional(
+                CONF_LATITUDE,
+                default=defaults.get(CONF_LATITUDE, self.hass.config.latitude),
+            )
+        ] = cv.latitude
+        data_schema[
+            vol.Optional(
+                CONF_NAME,
+                default=defaults.get(CONF_NAME, self.hass.config.location_name),
+            )
+        ] = str
         return self.async_show_form(
-            step_id="user", data_schema=vol.Schema(data_schema), errors=self._errors
+            step_id=step_id, data_schema=vol.Schema(data_schema), errors=self._errors
         )
 
     async def async_step_import(self, user_input):
