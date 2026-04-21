@@ -51,11 +51,11 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     # @asyncio.coroutine
     def get_data(self, url):
-        json_text = requests.get(url).content
+        json_text = requests.get(url, timeout=10).content
         resdata = json.loads(json_text)
         return resdata
 
-    async def async_step_user(self, user_input={}):
+    async def async_step_user(self, user_input=None):
         self._errors = {}
         if user_input is not None:
             # Check if entered host is already in HomeAssistant
@@ -65,14 +65,19 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
             # If it is not, continue with communication test
             url = str.format(
-                "https://api.caiyunapp.com/{}/{}/{},{}/daily.json",
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather?dailysteps=1&hourlysteps=1&alert=true&unit=metric",
                 user_input["api_version"],
                 user_input["api_key"],
                 user_input["longitude"],
                 user_input["latitude"],
             )
-            redata = await self.hass.async_add_executor_job(self.get_data, url)
-            status = redata["status"]
+            try:
+                redata = await self.hass.async_add_executor_job(self.get_data, url)
+            except requests.RequestException:
+                self._errors["base"] = "communication"
+                return await self._show_config_form(user_input)
+
+            status = redata.get("status")
             if status == "ok":
                 await self.async_set_unique_id(
                     f"{user_input['longitude']}-{user_input['latitude']}".replace(
@@ -92,7 +97,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_config_form(self, user_input):
         # Defaults
-        api_version = "v2.5"
+        api_version = "v2.6"
         data_schema = OrderedDict()
         data_schema[vol.Required(CONF_API_KEY)] = str
         data_schema[vol.Optional("api_version", default=api_version)] = str
@@ -149,7 +154,7 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_DAILYSTEPS,
                         default=self.config_entry.options.get(CONF_DAILYSTEPS, 5),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=5, max=15)),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=15)),
                     vol.Optional(
                         CONF_INTERVAL,
                         default=self.config_entry.options.get(CONF_INTERVAL, 5),
@@ -157,7 +162,7 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_HOURLYSTEPS,
                         default=self.config_entry.options.get(CONF_HOURLYSTEPS, 24),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=24, max=360)),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=360)),
                     vol.Optional(
                         CONF_STARTTIME,
                         default=self.config_entry.options.get(CONF_STARTTIME, 0),
