@@ -1,31 +1,5 @@
 import logging
-from typing import Any, Final, Generic, Literal, Required, TypedDict, cast, final
-from collections.abc import Callable, Iterable
 from homeassistant.components.weather import (
-    ATTR_CONDITION_HAIL,
-    ATTR_CONDITION_CLOUDY,
-    ATTR_CONDITION_FOG,
-    ATTR_CONDITION_LIGHTNING_RAINY,
-    ATTR_CONDITION_PARTLYCLOUDY,
-    ATTR_CONDITION_RAINY,
-    ATTR_CONDITION_SNOWY,
-    ATTR_CONDITION_SNOWY_RAINY,
-    ATTR_CONDITION_SUNNY,
-    ATTR_CONDITION_CLEAR_NIGHT,
-    ATTR_CONDITION_WINDY,
-    ATTR_CONDITION_POURING,
-    ATTR_FORECAST_CONDITION,
-    ATTR_FORECAST_NATIVE_TEMP,
-    ATTR_FORECAST_NATIVE_TEMP_LOW,
-    ATTR_FORECAST_TIME,
-    ATTR_FORECAST_WIND_BEARING,
-    ATTR_FORECAST_NATIVE_WIND_SPEED,
-    ATTR_FORECAST_PRECIPITATION,
-    ATTR_FORECAST_HUMIDITY,
-    ATTR_WEATHER_CLOUD_COVERAGE,
-    ATTR_WEATHER_HUMIDITY,
-    ATTR_WEATHER_PRESSURE,
-    ATTR_WEATHER_VISIBILITY,
     Forecast,
     WeatherEntity,
     WeatherEntityFeature,
@@ -38,33 +12,45 @@ from .const import ATTRIBUTION, COORDINATOR, DOMAIN, MANUFACTURER
 PARALLEL_UPDATES = 1
 _LOGGER = logging.getLogger(__name__)
 
+FORECAST_TIME = "datetime"
+FORECAST_CONDITION = "condition"
+FORECAST_TEMP = "temperature"
+FORECAST_TEMP_LOW = "templow"
+FORECAST_WIND_BEARING = "wind_bearing"
+FORECAST_WIND_SPEED = "wind_speed"
+FORECAST_PRECIPITATION = "precipitation"
+FORECAST_HUMIDITY = "humidity"
+FORECAST_CLOUD_COVERAGE = "cloud_coverage"
+FORECAST_PRESSURE = "pressure"
+FORECAST_VISIBILITY = "visibility"
+
 CONDITION_MAP = {
-    "CLEAR_DAY": ATTR_CONDITION_SUNNY,
-    "CLEAR_NIGHT": ATTR_CONDITION_CLEAR_NIGHT,
-    "PARTLY_CLOUDY_DAY": ATTR_CONDITION_PARTLYCLOUDY,
-    "PARTLY_CLOUDY_NIGHT": ATTR_CONDITION_PARTLYCLOUDY,
-    "CLOUDY": ATTR_CONDITION_CLOUDY,
-    "LIGHT_HAZE": ATTR_CONDITION_FOG,
-    "MODERATE_HAZE": ATTR_CONDITION_FOG,
-    "HEAVY_HAZE": ATTR_CONDITION_FOG,
-    "LIGHT_RAIN": ATTR_CONDITION_RAINY,
-    "MODERATE_RAIN": ATTR_CONDITION_RAINY,
-    "HEAVY_RAIN": ATTR_CONDITION_POURING,
-    "STORM_RAIN": ATTR_CONDITION_POURING,
-    "FOG": ATTR_CONDITION_FOG,
-    "LIGHT_SNOW": ATTR_CONDITION_SNOWY,
-    "MODERATE_SNOW": ATTR_CONDITION_SNOWY,
-    "HEAVY_SNOW": ATTR_CONDITION_SNOWY,
-    "STORM_SNOW": ATTR_CONDITION_SNOWY,
-    "DUST": ATTR_CONDITION_FOG,
-    "SAND": ATTR_CONDITION_FOG,
-    "THUNDER_SHOWER": ATTR_CONDITION_LIGHTNING_RAINY,
-    "HAIL": ATTR_CONDITION_HAIL,
-    "SLEET": ATTR_CONDITION_SNOWY_RAINY,
-    "WIND": ATTR_CONDITION_WINDY,
-    "HAZE": ATTR_CONDITION_FOG,
-    "RAIN": ATTR_CONDITION_RAINY,
-    "SNOW": ATTR_CONDITION_SNOWY,
+    "CLEAR_DAY": "sunny",
+    "CLEAR_NIGHT": "clear-night",
+    "PARTLY_CLOUDY_DAY": "partlycloudy",
+    "PARTLY_CLOUDY_NIGHT": "partlycloudy",
+    "CLOUDY": "cloudy",
+    "LIGHT_HAZE": "fog",
+    "MODERATE_HAZE": "fog",
+    "HEAVY_HAZE": "fog",
+    "LIGHT_RAIN": "rainy",
+    "MODERATE_RAIN": "rainy",
+    "HEAVY_RAIN": "pouring",
+    "STORM_RAIN": "pouring",
+    "FOG": "fog",
+    "LIGHT_SNOW": "snowy",
+    "MODERATE_SNOW": "snowy",
+    "HEAVY_SNOW": "snowy",
+    "STORM_SNOW": "snowy",
+    "DUST": "fog",
+    "SAND": "fog",
+    "THUNDER_SHOWER": "lightning-rainy",
+    "HAIL": "hail",
+    "SLEET": "snowy-rainy",
+    "WIND": "windy",
+    "HAZE": "fog",
+    "RAIN": "rainy",
+    "SNOW": "snowy",
 }
 
 
@@ -94,7 +80,7 @@ class ColorfulCloudsEntity(WeatherEntity):
         self._attrs = {}
         self._unit_system = (
             "Metric"
-            if self.coordinator.data["is_metric"] == "metric:v2"
+            if self.coordinator.data["is_metric"] == "metric"
             else "Imperial"
         )
 
@@ -137,7 +123,7 @@ class ColorfulCloudsEntity(WeatherEntity):
     def state(self):
         """Return the weather condition."""
         skycon = self.coordinator.data["result"]["realtime"]["skycon"]
-        return CONDITION_MAP[skycon]
+        return CONDITION_MAP.get(skycon)
 
     @property
     def cloud_coverage(self):
@@ -147,7 +133,7 @@ class ColorfulCloudsEntity(WeatherEntity):
     def condition(self):
         """Return the weather condition."""
         skycon = self.coordinator.data["result"]["realtime"]["skycon"]
-        return CONDITION_MAP[skycon]
+        return CONDITION_MAP.get(skycon)
 
     @property
     def humidity(self):
@@ -159,7 +145,7 @@ class ColorfulCloudsEntity(WeatherEntity):
 
     @property
     def native_precipitation_unit(self):
-        return "mm" if self.coordinator.data["is_metric"] == "metric:v2" else "in"
+        return "mm" if self.coordinator.data["is_metric"] == "metric" else "in"
 
     @property
     def native_pressure(self):
@@ -175,7 +161,7 @@ class ColorfulCloudsEntity(WeatherEntity):
 
     @property
     def native_temperature_unit(self):
-        return "°C" if self.coordinator.data["is_metric"] == "metric:v2" else "°F"
+        return "°C" if self.coordinator.data["is_metric"] == "metric" else "°F"
 
     @property
     def native_visibility(self):
@@ -184,7 +170,7 @@ class ColorfulCloudsEntity(WeatherEntity):
 
     @property
     def native_visibility_unit(self):
-        return "km" if self.coordinator.data["is_metric"] == "metric:v2" else "mi"
+        return "km" if self.coordinator.data["is_metric"] == "metric" else "mi"
 
     @property
     def native_wind_speed(self):
@@ -198,7 +184,7 @@ class ColorfulCloudsEntity(WeatherEntity):
 
     @property
     def native_wind_speed_unit(self):
-        return "km/h" if self.coordinator.data["is_metric"] == "metric:v2" else "mi/h"
+        return "km/h" if self.coordinator.data["is_metric"] == "metric" else "mi/h"
 
     @property
     def uv_index(self):
@@ -277,18 +263,18 @@ class ColorfulCloudsEntity(WeatherEntity):
         for i in range(len(daily["temperature"])):
             time_str = daily["temperature"][i]["date"]
             data_dict = {
-                ATTR_FORECAST_TIME: time_str,
+                FORECAST_TIME: time_str,
                 "skycon": daily["skycon"][i]["value"],
-                ATTR_FORECAST_CONDITION: CONDITION_MAP[daily["skycon"][i]["value"]],
-                ATTR_FORECAST_NATIVE_TEMP: daily["temperature"][i]["max"],
-                ATTR_FORECAST_NATIVE_TEMP_LOW: daily["temperature"][i]["min"],
-                ATTR_FORECAST_WIND_BEARING: daily["wind"][i]["avg"]["direction"],
-                ATTR_FORECAST_NATIVE_WIND_SPEED: daily["wind"][i]["avg"]["speed"],
-                ATTR_FORECAST_PRECIPITATION: daily["precipitation"][i]["avg"],
-                ATTR_FORECAST_HUMIDITY: daily["humidity"][i]["avg"],
-                ATTR_WEATHER_CLOUD_COVERAGE: daily["cloudrate"][i]["avg"],
-                ATTR_WEATHER_PRESSURE: daily["pressure"][i]["avg"],
-                ATTR_WEATHER_VISIBILITY: daily["visibility"][i]["avg"],
+                FORECAST_CONDITION: CONDITION_MAP.get(daily["skycon"][i]["value"]),
+                FORECAST_TEMP: daily["temperature"][i]["max"],
+                FORECAST_TEMP_LOW: daily["temperature"][i]["min"],
+                FORECAST_WIND_BEARING: daily["wind"][i]["avg"]["direction"],
+                FORECAST_WIND_SPEED: daily["wind"][i]["avg"]["speed"],
+                FORECAST_PRECIPITATION: daily["precipitation"][i]["avg"],
+                FORECAST_HUMIDITY: daily["humidity"][i]["avg"],
+                FORECAST_CLOUD_COVERAGE: daily["cloudrate"][i]["avg"],
+                FORECAST_PRESSURE: daily["pressure"][i]["avg"],
+                FORECAST_VISIBILITY: daily["visibility"][i]["avg"],
             }
             forecast_data.append(data_dict)
 
@@ -300,17 +286,17 @@ class ColorfulCloudsEntity(WeatherEntity):
         for i in range(len(hourly["temperature"])):
             time_str = hourly["temperature"][i]["datetime"]
             data_dict = {
-                ATTR_FORECAST_TIME: time_str,
+                FORECAST_TIME: time_str,
                 "skycon": hourly["skycon"][i]["value"],
-                ATTR_FORECAST_CONDITION: CONDITION_MAP[hourly["skycon"][i]["value"]],
-                ATTR_FORECAST_NATIVE_TEMP: hourly["temperature"][i]["value"],
-                ATTR_FORECAST_WIND_BEARING: hourly["wind"][i]["direction"],
-                ATTR_FORECAST_NATIVE_WIND_SPEED: hourly["wind"][i]["speed"],
-                ATTR_FORECAST_PRECIPITATION: hourly["precipitation"][i]["value"],
-                ATTR_WEATHER_HUMIDITY: hourly["humidity"][i]["value"],
-                ATTR_WEATHER_CLOUD_COVERAGE: hourly["cloudrate"][i]["value"],
-                ATTR_WEATHER_PRESSURE: hourly["pressure"][i]["value"],
-                ATTR_WEATHER_VISIBILITY: hourly["visibility"][i]["value"],
+                FORECAST_CONDITION: CONDITION_MAP.get(hourly["skycon"][i]["value"]),
+                FORECAST_TEMP: hourly["temperature"][i]["value"],
+                FORECAST_WIND_BEARING: hourly["wind"][i]["direction"],
+                FORECAST_WIND_SPEED: hourly["wind"][i]["speed"],
+                FORECAST_PRECIPITATION: hourly["precipitation"][i]["value"],
+                FORECAST_HUMIDITY: hourly["humidity"][i]["value"],
+                FORECAST_CLOUD_COVERAGE: hourly["cloudrate"][i]["value"],
+                FORECAST_PRESSURE: hourly["pressure"][i]["value"],
+                FORECAST_VISIBILITY: hourly["visibility"][i]["value"],
             }
             forecast_data.append(data_dict)
         return forecast_data
