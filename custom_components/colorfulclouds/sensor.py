@@ -4,7 +4,7 @@ import logging
 
 from homeassistant.const import ATTR_ATTRIBUTION, ATTR_DEVICE_CLASS, CONF_NAME
 from homeassistant.helpers.device_registry import DeviceEntryType
-from homeassistant.helpers.entity import Entity
+from homeassistant.components.sensor import SensorEntity
 
 from .const import (
     ATTR_ICON,
@@ -33,7 +33,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities(sensors, False)
 
 
-class ColorfulcloudsSensor(Entity):
+class ColorfulcloudsSensor(SensorEntity):
     """Define an Colorfulclouds entity."""
 
     def __init__(self, name, kind, coordinator, forecast_day=None):
@@ -45,7 +45,7 @@ class ColorfulcloudsSensor(Entity):
         self._attrs = {ATTR_ATTRIBUTION: ATTRIBUTION}
         self._unit_system = (
             "Metric"
-            if self.coordinator.data["is_metric"] == "metric:v2"
+            if self.coordinator.data["is_metric"] == "metric"
             else "Imperial"
         )
         self.forecast_day = forecast_day
@@ -84,7 +84,7 @@ class ColorfulcloudsSensor(Entity):
         return self.coordinator.last_update_success
 
     @property
-    def state(self):
+    def native_value(self):
         """Return the state."""
         if self.kind == "apparent_temperature":
             return self.coordinator.data["result"]["realtime"][self.kind]
@@ -113,9 +113,12 @@ class ColorfulcloudsSensor(Entity):
                 "ultraviolet"
             ]["index"]
         if self.kind == "precipitation":
-            return self.coordinator.data["result"]["realtime"]["precipitation"][
-                "local"
-            ]["intensity"]
+            precipitation = (
+                self.coordinator.data.get("result", {})
+                .get("realtime", {})
+                .get("precipitation", {})
+            )
+            return precipitation.get("local", {}).get("intensity")
 
     @property
     def icon(self):
@@ -132,7 +135,7 @@ class ColorfulcloudsSensor(Entity):
         return SENSOR_TYPES[self.kind][ATTR_DEVICE_CLASS]
 
     @property
-    def unit_of_measurement(self):
+    def native_unit_of_measurement(self):
         """Return the unit the value is expressed in."""
         # if self.forecast_day is not None:
         #     return FORECAST_SENSOR_TYPES[self.kind][self._unit_system]
@@ -150,15 +153,17 @@ class ColorfulcloudsSensor(Entity):
                 "life_index"
             ]["comfort"]["desc"]
         elif self.kind == "precipitation":
-            self._attrs["datasource"] = self.coordinator.data["result"]["realtime"][
-                "precipitation"
-            ]["local"]["datasource"]
-            self._attrs["nearest_intensity"] = self.coordinator.data["result"][
-                "realtime"
-            ]["precipitation"]["nearest"]["intensity"]
-            self._attrs["nearest_distance"] = self.coordinator.data["result"][
-                "realtime"
-            ]["precipitation"]["nearest"]["distance"]
+            precipitation = (
+                self.coordinator.data.get("result", {})
+                .get("realtime", {})
+                .get("precipitation", {})
+            )
+            local = precipitation.get("local", {})
+            nearest = precipitation.get("nearest", {})
+
+            self._attrs["datasource"] = local.get("datasource")
+            self._attrs["nearest_intensity"] = nearest.get("intensity")
+            self._attrs["nearest_distance"] = nearest.get("distance")
         return self._attrs
 
     @property
