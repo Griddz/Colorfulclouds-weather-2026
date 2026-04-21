@@ -113,9 +113,12 @@ class ColorfulcloudsSensor(SensorEntity):
                 "ultraviolet"
             ]["index"]
         if self.kind == "precipitation":
-            return self.coordinator.data["result"]["realtime"]["precipitation"][
-                "local"
-            ]["intensity"]
+            precipitation = (
+                self.coordinator.data.get("result", {})
+                .get("realtime", {})
+                .get("precipitation", {})
+            )
+            return precipitation.get("local", {}).get("intensity")
 
     @property
     def icon(self):
@@ -150,15 +153,17 @@ class ColorfulcloudsSensor(SensorEntity):
                 "life_index"
             ]["comfort"]["desc"]
         elif self.kind == "precipitation":
-            self._attrs["datasource"] = self.coordinator.data["result"]["realtime"][
-                "precipitation"
-            ]["local"]["datasource"]
-            self._attrs["nearest_intensity"] = self.coordinator.data["result"][
-                "realtime"
-            ]["precipitation"]["nearest"]["intensity"]
-            self._attrs["nearest_distance"] = self.coordinator.data["result"][
-                "realtime"
-            ]["precipitation"]["nearest"]["distance"]
+            precipitation = (
+                self.coordinator.data.get("result", {})
+                .get("realtime", {})
+                .get("precipitation", {})
+            )
+            local = precipitation.get("local", {})
+            nearest = precipitation.get("nearest", {})
+
+            self._attrs["datasource"] = local.get("datasource")
+            self._attrs["nearest_intensity"] = nearest.get("intensity")
+            self._attrs["nearest_distance"] = nearest.get("distance")
         return self._attrs
 
     @property
