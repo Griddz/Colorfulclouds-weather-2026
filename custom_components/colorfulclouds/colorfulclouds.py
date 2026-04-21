@@ -68,9 +68,11 @@ class ColorfulcloudsDataUpdateCoordinator(DataUpdateCoordinator):
                     str(self.alert).lower(),
                     self.is_metric,
                 )
+                _LOGGER.warning("Colorfulclouds request URL: %s", url)
                 async with self.websession.get(url) as response:
                     response.raise_for_status()
                     resdata = json_loads(await response.text())
+                _LOGGER.warning("Colorfulclouds raw response: %s", resdata)
 
                 if resdata.get("status") != "ok":
                     raise UpdateFailed(

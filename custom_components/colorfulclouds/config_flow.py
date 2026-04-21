@@ -65,7 +65,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
             # If it is not, continue with communication test
             url = str.format(
-                "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert=true&dailysteps=7&hourlysteps=24",
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather?dailysteps=1&hourlysteps=1&alert=true&unit=metric",
                 user_input["api_version"],
                 user_input["api_key"],
                 user_input["longitude"],
@@ -102,7 +102,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             url = str.format(
-                "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert=true&dailysteps=7&hourlysteps=24",
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather?dailysteps=1&hourlysteps=1&alert=true&unit=metric",
                 user_input["api_version"],
                 user_input["api_key"],
                 user_input["longitude"],
@@ -192,7 +192,7 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
-        return await self.async_step_user()
+        return await self.async_step_user(user_input)
 
     async def async_step_user(self, user_input=None):
         """Handle a flow initialized by the user."""
