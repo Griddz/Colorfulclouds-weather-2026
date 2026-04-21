@@ -65,7 +65,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
             # If it is not, continue with communication test
             url = str.format(
-                "https://api.caiyunapp.com/{}/{}/{},{}/weather?dailysteps=1&hourlysteps=1&alert=true&unit=metric",
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert=true&dailysteps=1&hourlysteps=24",
                 user_input["api_version"],
                 user_input["api_key"],
                 user_input["longitude"],
@@ -102,7 +102,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             url = str.format(
-                "https://api.caiyunapp.com/{}/{}/{},{}/weather?dailysteps=1&hourlysteps=1&alert=true&unit=metric",
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert=true&dailysteps=1&hourlysteps=24",
                 user_input["api_version"],
                 user_input["api_key"],
                 user_input["longitude"],

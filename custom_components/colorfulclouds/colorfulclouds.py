@@ -58,15 +58,14 @@ class ColorfulcloudsDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             async with timeout(10):
                 url = str.format(
-                    "https://api.caiyunapp.com/{}/{}/{},{}/weather?dailysteps={}&hourlysteps={}&alert={}&unit={}",
+                    "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert={}&dailysteps={}&hourlysteps={}",
                     self.api_version,
                     self.api_key,
                     self.longitude,
                     self.latitude,
+                    str(self.alert).lower(),
                     self.dailysteps,
                     self.hourlysteps,
-                    str(self.alert).lower(),
-                    self.is_metric,
                 )
                 _LOGGER.warning("Colorfulclouds request URL: %s", url)
                 async with self.websession.get(url) as response:
