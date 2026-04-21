@@ -37,7 +37,7 @@
         "step": {
             "user":{
                 "data": {
-                    "dailysteps": "天级预报(1-15)",
+                    "dailysteps": "天级预报(5-15)",
                     "hourlysteps": "小时级预报(1-360)",
                     "alert": "极端天气预警",
                     "starttime": "预报起始时间,-1 是昨天,-2 是前天",
