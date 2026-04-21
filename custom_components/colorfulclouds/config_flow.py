@@ -51,11 +51,11 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     # @asyncio.coroutine
     def get_data(self, url):
-        json_text = requests.get(url).content
+        json_text = requests.get(url, timeout=10).content
         resdata = json.loads(json_text)
         return resdata
 
-    async def async_step_user(self, user_input={}):
+    async def async_step_user(self, user_input=None):
         self._errors = {}
         if user_input is not None:
             # Check if entered host is already in HomeAssistant
@@ -71,8 +71,13 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 user_input["longitude"],
                 user_input["latitude"],
             )
-            redata = await self.hass.async_add_executor_job(self.get_data, url)
-            status = redata["status"]
+            try:
+                redata = await self.hass.async_add_executor_job(self.get_data, url)
+            except requests.RequestException:
+                self._errors["base"] = "communication"
+                return await self._show_config_form(user_input)
+
+            status = redata.get("status")
             if status == "ok":
                 await self.async_set_unique_id(
                     f"{user_input['longitude']}-{user_input['latitude']}".replace(
