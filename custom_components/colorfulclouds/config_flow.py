@@ -51,7 +51,11 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     # @asyncio.coroutine
     def get_data(self, url):
-        json_text = requests.get(url, timeout=10).content
+        headers = {
+                        "User-Agent": "Mozilla/5.0",
+                        "Accept": "application/json",
+                    }
+        json_text = requests.get(url, headers=headers, timeout=10).content
         resdata = json.loads(json_text)
         return resdata
 
@@ -65,7 +69,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
             # If it is not, continue with communication test
             url = str.format(
-                "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert=true&dailysteps=1&hourlysteps=24",
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather.json?alert=true&dailysteps=1&hourlysteps=24",
                 user_input["api_version"],
                 user_input["api_key"],
                 user_input["longitude"],
@@ -102,7 +106,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             url = str.format(
-                "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert=true&dailysteps=1&hourlysteps=24",
+                "https://api.caiyunapp.com/{}/{}/{},{}/weather.json?alert=true&dailysteps=1&hourlysteps=24",
                 user_input["api_version"],
                 user_input["api_key"],
                 user_input["longitude"],
