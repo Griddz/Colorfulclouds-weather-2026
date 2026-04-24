@@ -57,18 +57,24 @@ class ColorfulcloudsDataUpdateCoordinator(DataUpdateCoordinator):
         """Update data via library."""
         try:
             async with timeout(10):
-                url = str.format(
-                    "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert={}&dailysteps={}&hourlysteps={}",
-                    self.api_version,
-                    self.api_key,
-                    self.longitude,
-                    self.latitude,
-                    str(self.alert).lower(),
-                    self.dailysteps,
-                    self.hourlysteps,
-                )
+        url = str.format(
+            "https://api.caiyunapp.com/{}/{}/{},{}/weather.json?alert={}&dailysteps={}&hourlysteps={}",
+            self.api_version,
+            self.api_key,
+            self.longitude,
+            self.latitude,
+            str(self.alert).lower(),
+            self.dailysteps,
+            self.hourlysteps,
+        )
                 _LOGGER.debug("Colorfulclouds request URL: %s", url)
-                async with self.websession.get(url) as response:
+                
+                                    headers = {
+                        "User-Agent": "Mozilla/5.0",
+                        "Accept": "application/json",
+                    }
+                    
+                    async with self.websession.get(url, headers=headers) as response:
                     response.raise_for_status()
                     resdata = json_loads(await response.text())
                 _LOGGER.debug("Colorfulclouds raw response: %s", resdata)
