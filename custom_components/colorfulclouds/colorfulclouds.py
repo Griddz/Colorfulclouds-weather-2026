@@ -1,13 +1,12 @@
 import datetime
-import json
 import logging
 
-from aiohttp.client_exceptions import ClientConnectorError
+from aiohttp import ClientError
 from async_timeout import timeout
-import requests
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util.unit_system import METRIC_SYSTEM
+from homeassistant.util.json import json_loads
 
 _LOGGER = logging.getLogger(__name__)
 from .const import DOMAIN
@@ -42,9 +41,10 @@ class ColorfulcloudsDataUpdateCoordinator(DataUpdateCoordinator):
         self.api_version = api_version
         self.api_key = api_key
         self.starttime = starttime
-        self.is_metric = "metric:v2"
+        self.websession = websession
+        self.is_metric = "metric"
         if hass.config.units is METRIC_SYSTEM:
-            self.is_metric = "metric:v2"
+            self.is_metric = "metric"
         else:
             self.is_metric = "imperial"
 
@@ -53,37 +53,34 @@ class ColorfulcloudsDataUpdateCoordinator(DataUpdateCoordinator):
 
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=update_interval)
 
-    # @asyncio.coroutine
-    def get_data(self, url):
-        json_text = requests.get(url).content
-        resdata = json.loads(json_text)
-        return resdata
-
     async def _async_update_data(self):
         """Update data via library."""
         try:
             async with timeout(10):
-                start_timestamp = int(
-                    (
-                        datetime.datetime.now()
-                        + datetime.timedelta(days=self.starttime)
-                    ).timestamp()
-                )
                 url = str.format(
-                    "https://api.caiyunapp.com/{}/{}/{},{}/weather.json?dailysteps={}&hourlysteps={}&alert={}&unit={}&timestamp={}",
+                    "https://api.caiyunapp.com/{}/{}/{},{}/weather?alert={}&dailysteps={}&hourlysteps={}",
                     self.api_version,
                     self.api_key,
                     self.longitude,
                     self.latitude,
+                    str(self.alert).lower(),
                     self.dailysteps,
                     self.hourlysteps,
-                    str(self.alert).lower(),
-                    self.is_metric,
-                    start_timestamp,
                 )
-                # json_text = requests.get(url).content
-                resdata = await self.hass.async_add_executor_job(self.get_data, url)
-        except ClientConnectorError as error:
+                headers = {
+                    "User-Agent": "Mozilla/5.0",
+                }
+                _LOGGER.debug("Colorfulclouds request URL: %s", url)
+                async with self.websession.get(url, headers=headers) as response:
+                    response.raise_for_status()
+                    resdata = json_loads(await response.text())
+                _LOGGER.debug("Colorfulclouds raw response: %s", resdata)
+
+                if resdata.get("status") != "ok":
+                    raise UpdateFailed(
+                        f"Caiyun API returned non-ok status: {resdata.get('status')}"
+                    )
+        except (ClientError, TimeoutError, ValueError) as error:
             raise UpdateFailed(error)
         _LOGGER.debug("Requests remaining: %s", url)
         return {

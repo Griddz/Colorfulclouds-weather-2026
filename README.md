@@ -11,7 +11,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
-使用最新的v2.5彩云api, [自己去申请key](https://www.caiyunapp.com/dev_center/login.html)
+使用最新的v2.6彩云api, [自己去申请key](https://www.caiyunapp.com/dev_center/login.html)
 
 模拟了官方天气的格式
 
@@ -61,6 +61,12 @@
   + 添加自定义api请求间隔时间（默认是10分钟）
 + ### v2.0.3
   + 修复天气实体和预报不刷新的问题 [#56](https://github.com/fineemb/Colorfulclouds-weather/issues/56)
++ ### v2.1.0
+  + 彩云 API 升级为 v2.6（`/weather` 聚合接口）
+  + 适配 Home Assistant 新版传感器接口
+  + 配置流默认 API 版本更新为 `v2.6`，并支持 `dailysteps` 最小值为 1
++ ### v2.1.1
+  + 修复新版本 Home Assistant 中 `weather.xxx` 实体无法创建的问题（天气预报字段改为标准键名）
 ## 安装配置
 
 建议使用HACS安装和配置
