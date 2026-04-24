@@ -206,7 +206,7 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_DAILYSTEPS,
                         default=self.config_entry.options.get(CONF_DAILYSTEPS, 5),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=5, max=15)),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=15)),
                     vol.Optional(
                         CONF_INTERVAL,
                         default=self.config_entry.options.get(CONF_INTERVAL, 5),
