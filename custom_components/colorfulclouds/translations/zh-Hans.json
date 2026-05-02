@@ -21,7 +21,10 @@
                     "api_version": "API版本,默认是v2.6",
                     "latitude" : "维度",
                     "longitude" : "经度",
-                    "name" : "名称"
+                    "name" : "名称",
+                    "dailysteps": "预报天数(5-15天)",
+                    "hourlysteps": "小时预报数(1-360小时)",
+                    "interval": "天气预报刷新间隔(分钟)"
                 }
             }
         },

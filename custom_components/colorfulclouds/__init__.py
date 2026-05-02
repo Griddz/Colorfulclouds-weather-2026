@@ -47,11 +47,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     longitude = config_entry.data[CONF_LONGITUDE]
     latitude = config_entry.data[CONF_LATITUDE]
     api_version = config_entry.data[CONF_API_VERSION]
-    dailysteps = config_entry.options.get(CONF_DAILYSTEPS, 5)
+    dailysteps = config_entry.options.get(
+        CONF_DAILYSTEPS, config_entry.options.get("forecast", 5)
+    )
     hourlysteps = config_entry.options.get(CONF_HOURLYSTEPS, 24)
     alert = config_entry.options.get(CONF_ALERT, True)
     starttime = config_entry.options.get(CONF_STARTTIME, 0)
-    interval = config_entry.options.get(CONF_INTERVAL, 10)
+    interval = config_entry.options.get(
+        CONF_INTERVAL, config_entry.data.get(CONF_INTERVAL, 5)
+    )
     # _LOGGER.debug("Using location_key: %s, get forecast: %s", location_key, api_version)
     websession = async_get_clientsession(hass)
     coordinator = ColorfulcloudsDataUpdateCoordinator(

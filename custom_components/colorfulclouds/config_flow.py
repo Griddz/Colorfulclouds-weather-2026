@@ -123,7 +123,16 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 )
                 self._abort_if_unique_id_mismatch(reason="already_configured")
-                return self.async_update_reload_and_abort(entry, data_updates=user_input)
+                option_updates = {
+                    CONF_DAILYSTEPS: user_input.pop(CONF_DAILYSTEPS),
+                    CONF_HOURLYSTEPS: user_input.pop(CONF_HOURLYSTEPS),
+                    CONF_INTERVAL: user_input.pop(CONF_INTERVAL),
+                }
+                return self.async_update_reload_and_abort(
+                    entry,
+                    data_updates=user_input,
+                    options_updates=option_updates,
+                )
 
             self._errors["base"] = "communication"
 
@@ -162,9 +171,38 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 default=defaults.get(CONF_NAME, self.hass.config.location_name),
             )
         ] = str
+        if step_id == "reconfigure":
+            data_schema[
+                vol.Optional(
+                    CONF_DAILYSTEPS,
+                    default=self._get_option_default(defaults, CONF_DAILYSTEPS, 5),
+                )
+            ] = vol.All(vol.Coerce(int), vol.Range(min=5, max=15))
+            data_schema[
+                vol.Optional(
+                    CONF_HOURLYSTEPS,
+                    default=self._get_option_default(defaults, CONF_HOURLYSTEPS, 24),
+                )
+            ] = vol.All(vol.Coerce(int), vol.Range(min=1, max=360))
+            data_schema[
+                vol.Optional(
+                    CONF_INTERVAL,
+                    default=self._get_option_default(defaults, CONF_INTERVAL, 5),
+                )
+            ] = vol.All(vol.Coerce(int), vol.Range(min=1))
         return self.async_show_form(
             step_id=step_id, data_schema=vol.Schema(data_schema), errors=self._errors
         )
+
+    def _get_option_default(self, defaults, key, fallback):
+        """Return the current option value for the reconfigure form."""
+        entry = self._get_reconfigure_entry()
+        if key == CONF_DAILYSTEPS:
+            return entry.options.get(
+                CONF_DAILYSTEPS,
+                entry.options.get("forecast", defaults.get(key, fallback)),
+            )
+        return entry.options.get(key, defaults.get(key, fallback))
 
     async def async_step_import(self, user_input):
         """Import a config entry.
@@ -205,8 +243,11 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
                 {
                     vol.Optional(
                         CONF_DAILYSTEPS,
-                        default=self.config_entry.options.get(CONF_DAILYSTEPS, 5),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=15)),
+                        default=self.config_entry.options.get(
+                            CONF_DAILYSTEPS,
+                            self.config_entry.options.get("forecast", 5),
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=5, max=15)),
                     vol.Optional(
                         CONF_INTERVAL,
                         default=self.config_entry.options.get(CONF_INTERVAL, 5),
