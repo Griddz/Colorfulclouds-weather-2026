@@ -79,6 +79,8 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
             status = redata.get("status")
             if status == "ok":
+                title = user_input[CONF_NAME]
+                option_updates = self._extract_option_updates(user_input)
                 await self.async_set_unique_id(
                     f"{user_input['longitude']}-{user_input['latitude']}".replace(
                         ".", "_"
@@ -86,7 +88,7 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
-                    title=user_input[CONF_NAME], data=user_input
+                    title=title, data=user_input, options=option_updates
                 )
             else:
                 self._errors["base"] = "communication"
@@ -123,16 +125,14 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                 )
                 self._abort_if_unique_id_mismatch(reason="already_configured")
-                option_updates = {
-                    CONF_DAILYSTEPS: user_input.pop(CONF_DAILYSTEPS),
-                    CONF_HOURLYSTEPS: user_input.pop(CONF_HOURLYSTEPS),
-                    CONF_INTERVAL: user_input.pop(CONF_INTERVAL),
-                }
-                return self.async_update_reload_and_abort(
+                option_updates = self._extract_option_updates(user_input)
+                self.hass.config_entries.async_update_entry(
                     entry,
-                    data_updates=user_input,
-                    options_updates=option_updates,
+                    data={**entry.data, **user_input},
+                    options={**entry.options, **option_updates},
                 )
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reconfigure_successful")
 
             self._errors["base"] = "communication"
 
@@ -171,31 +171,48 @@ class ColorfulcloudslowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 default=defaults.get(CONF_NAME, self.hass.config.location_name),
             )
         ] = str
-        if step_id == "reconfigure":
-            data_schema[
-                vol.Optional(
-                    CONF_DAILYSTEPS,
-                    default=self._get_option_default(defaults, CONF_DAILYSTEPS, 5),
-                )
-            ] = vol.All(vol.Coerce(int), vol.Range(min=5, max=15))
-            data_schema[
-                vol.Optional(
-                    CONF_HOURLYSTEPS,
-                    default=self._get_option_default(defaults, CONF_HOURLYSTEPS, 24),
-                )
-            ] = vol.All(vol.Coerce(int), vol.Range(min=1, max=360))
-            data_schema[
-                vol.Optional(
-                    CONF_INTERVAL,
-                    default=self._get_option_default(defaults, CONF_INTERVAL, 5),
-                )
-            ] = vol.All(vol.Coerce(int), vol.Range(min=1))
+        data_schema[
+            vol.Optional(
+                CONF_DAILYSTEPS,
+                default=self._get_option_default(
+                    step_id, user_input, defaults, CONF_DAILYSTEPS, 5
+                ),
+            )
+        ] = vol.All(vol.Coerce(int), vol.Range(min=5, max=15))
+        data_schema[
+            vol.Optional(
+                CONF_HOURLYSTEPS,
+                default=self._get_option_default(
+                    step_id, user_input, defaults, CONF_HOURLYSTEPS, 24
+                ),
+            )
+        ] = vol.All(vol.Coerce(int), vol.Range(min=1, max=360))
+        data_schema[
+            vol.Optional(
+                CONF_INTERVAL,
+                default=self._get_option_default(
+                    step_id, user_input, defaults, CONF_INTERVAL, 5
+                ),
+            )
+        ] = vol.All(vol.Coerce(int), vol.Range(min=1))
         return self.async_show_form(
             step_id=step_id, data_schema=vol.Schema(data_schema), errors=self._errors
         )
 
-    def _get_option_default(self, defaults, key, fallback):
-        """Return the current option value for the reconfigure form."""
+    def _extract_option_updates(self, user_input):
+        """Move forecast settings from config data to options."""
+        return {
+            CONF_DAILYSTEPS: user_input.pop(CONF_DAILYSTEPS),
+            CONF_HOURLYSTEPS: user_input.pop(CONF_HOURLYSTEPS),
+            CONF_INTERVAL: user_input.pop(CONF_INTERVAL),
+        }
+
+    def _get_option_default(self, step_id, user_input, defaults, key, fallback):
+        """Return the current option value for config forms."""
+        if user_input and key in user_input:
+            return user_input[key]
+        if step_id != "reconfigure":
+            return defaults.get(key, fallback)
         entry = self._get_reconfigure_entry()
         if key == CONF_DAILYSTEPS:
             return entry.options.get(
@@ -226,7 +243,7 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         """Initialize Colorfulclouds options flow."""
-        self.config_entry = config_entry
+        self._config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -243,26 +260,26 @@ class ColorfulcloudsOptionsFlow(config_entries.OptionsFlow):
                 {
                     vol.Optional(
                         CONF_DAILYSTEPS,
-                        default=self.config_entry.options.get(
+                        default=self._config_entry.options.get(
                             CONF_DAILYSTEPS,
-                            self.config_entry.options.get("forecast", 5),
+                            self._config_entry.options.get("forecast", 5),
                         ),
                     ): vol.All(vol.Coerce(int), vol.Range(min=5, max=15)),
                     vol.Optional(
                         CONF_INTERVAL,
-                        default=self.config_entry.options.get(CONF_INTERVAL, 5),
+                        default=self._config_entry.options.get(CONF_INTERVAL, 5),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1)),
                     vol.Optional(
                         CONF_HOURLYSTEPS,
-                        default=self.config_entry.options.get(CONF_HOURLYSTEPS, 24),
+                        default=self._config_entry.options.get(CONF_HOURLYSTEPS, 24),
                     ): vol.All(vol.Coerce(int), vol.Range(min=1, max=360)),
                     vol.Optional(
                         CONF_STARTTIME,
-                        default=self.config_entry.options.get(CONF_STARTTIME, 0),
+                        default=self._config_entry.options.get(CONF_STARTTIME, 0),
                     ): vol.All(vol.Coerce(int), vol.Range(min=-5, max=0)),
                     vol.Optional(
                         CONF_ALERT,
-                        default=self.config_entry.options.get(CONF_ALERT, True),
+                        default=self._config_entry.options.get(CONF_ALERT, True),
                     ): bool,
                 }
             ),
